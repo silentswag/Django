@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from models import vendor, purchaseOrder,historicalPerformance
+from .models import vendor, purchaseOrder,historicalPerformance
 
 class vendorSerializer(serializers.ModelSerializer):
     class Meta:
