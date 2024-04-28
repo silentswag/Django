@@ -1,0 +1,75 @@
+Django Vendor System
+
+1. django-admin startproject vendor_management_system
+2. pip install django
+3. pip install djangorestframework
+4. python manage.py migrate
+5. python manage.py runserver
+
+
+Start project
+1. python manage.py startapp vendorsite
+2. define models -> from django.db import models
+class vendor(models.Model):
+    name=models.CharField(max_length=200)
+    contact_details=models.TextField(max_length=10)
+    address=models.TextField(max_length=400)
+    vendor_code=models.CharField(max_length=200)
+    on_time_delivery_rate= models.FloatField(max_length=50)
+    quality_rating_avg=models.FloatField(max_length=50)
+    average_response_time=models.FloatField(max_length=50)
+    fulfillment_rate=models.FloatField(max_length=50)
+
+class purchaseOrder(models.Model):
+    po_number=models.CharField(max_length=50)
+    vendor=models.ForeignKey(max_length=100)
+    order_date=models.DateTimeField(max_length=10)
+    delivery_date=models.DateTimeField(max_length=10)
+    items=models.JSONField(max_length=200)
+    quantity=models.IntegerField(max_length=100)
+    status=models.CharField(max_length=100)
+    quality_rating=models.FloatField(max_length=100)
+    issue_date=models.DateTimeField(max_length=10)
+    acknowledgment_date=models.DateTimeField(max_length=10)
+
+class historicalPerformance(models.Model):
+    vendor=models.ForeignKey(max_length=200)
+    date=models.DateTimeField(max_length=20)
+    on_time_delivery_rate=models.FloatField(max_length=50)
+    quality_rating_avg=models.FloatField(max_length=50)
+    average_response_time=models.FloatField(max_length=50)
+    fulfilment_rate=models.FloatField(max_length=10)
+
+
+3.models defined,now to create tables in dbase - py manage.py makemigrations vendorsite
+System check identified some issues:
+
+WARNINGS:
+vendorsite.purchaseOrder.quantity: (fields.W122) 'max_length' is ignored when used with IntegerField.
+        HINT: Remove 'max_length' from field
+Migrations for 'vendorsite':
+  vendorsite\migrations\0001_initial.py (created in folder structure)
+    - Create model vendor
+    - Create model purchaseOrder
+    - Create model historicalPerformance
+
+4. py manage.py migrate
+Operations to perform:
+  Apply all migrations: admin, auth, contenttypes, sessions, vendorsite
+Running migrations:
+  Applying vendorsite.0001_initial... OK
+  Applying vendorsite.0002_alter_purchaseorder_quantity... OK
+
+5.inserting data using python shell
+In [1]: from vendorsite.models import vendor
+
+In [2]: vendor.objects.all()
+Out[2]: <QuerySet []>
+
+
+name= 'amazon', contact_details='phone:976453', address='123,cityville,NY' , vendor_code= 'amazn001', on_time_delivery_rate= 0.98, quality_rating_avg=4.3, average_response_time=1.5, fulfillment_rate=o.95 
+
+In [5]: v1.save()
+
+In [6]: vendor.objects.all().values()
+Out[6]: <QuerySet [{'id': 1, 'name': 'amazon', 'contact_details': 'phone:976453', 'address': '123, cityville, NY', 'vendor_code': 'amazn001', 'on_time_delivery_rate': 0.98, 'quality_rating_avg': 4.3, 'average_response_time': 1.5, 'fulfillment_rate': 0.95}]>
