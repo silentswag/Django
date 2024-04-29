@@ -118,5 +118,11 @@ class HperformanceViewset(viewsets.ViewSet):
         return JsonResponse({"message": "Performance metrics calculated and updated for vendor {}".format(id)})
     
 
-    def recalculate_performance_metrics(sender, instance, **kwargs):
+    def calculate_performance_metrics(sender, instance, **kwargs):
         historicalPerformance.calculate_performance_metrics(instance)
+
+
+
+        #calc perf metrics defined two times
+        #ack view
+        #admin auth in views of vkay
