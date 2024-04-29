@@ -4,9 +4,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import vendor, purchaseOrder, historicalPerformance
 from .serializers import vendorSerializer, purchaseOrderSerializer,historicalPerformanceSerializer
-
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 class vendorViewset(viewsets.ViewSet):
     def createVendor(self, request):
@@ -91,5 +92,31 @@ class poViewset(viewsets.ViewSet):
         except purchaseOrder.DoesNotExist:
             return Response({"message": "Purchase order not found"}, status=status.HTTP_404_NOT_FOUND)
         
-#class HperformanceViewset(viewsets.ViewSet):
+class HperformanceViewset(viewsets.ViewSet):
+    def getVendor(self,request,id=None):
+        try:
+            vendorInst= vendor.objects.get(pk=id)
+            hpVendor= historicalPerformance.objects.filter(vendor=vendorInst)
+            serialized=historicalPerformanceSerializer(hpVendor,many=True)
+            return JsonResponse(serialized.data)
+        except vendor.DoesNotExist:
+            return JsonResponse({"message":"vendor doesnt exist"},status=status.HTTP_404_NOT_FOUND)
+
+
+    def calculate_performance_metrics(self, request, id=None):
+        try:
+            vendorInst = vendor.objects.get(pk=id)
+        except vendor.DoesNotExist:
+            return JsonResponse({"message": "vendor doesn't exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Calculate performance metrics for the vendor
+        historicalPerformance.calc_onTimedeliveryRate(vendorInst)
+        historicalPerformance.calcQualityRatingAvg(vendorInst)
+        historicalPerformance.calcAvgRespTime(vendorInst)
+        historicalPerformance.calcFulfillmentRate(vendorInst)
     
+        return JsonResponse({"message": "Performance metrics calculated and updated for vendor {}".format(id)})
+    
+
+    def recalculate_performance_metrics(sender, instance, **kwargs):
+        historicalPerformance.calculate_performance_metrics(instance)
