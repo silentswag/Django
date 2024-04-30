@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+import datetime
 from rest_framework.response import Response
 from rest_framework import status
 from .models import vendor, purchaseOrder, historicalPerformance
@@ -35,7 +36,7 @@ class vendorViewset(viewsets.ViewSet):
         try:
             vendorUpdates= vendor.objects.get(pk=pk)
             serialized=vendorSerializer(vendorUpdates,data=request.data)
-            if serialized.is_valid:
+            if serialized.is_valid():
                 serialized.save()
                 return Response(serialized.data,{"message":"data updated"})
             return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)  
@@ -67,7 +68,7 @@ class poViewset(viewsets.ViewSet):
 
     def retrievePOinstance(self, request, pk=None):
         try:
-            purchase_order = purchaseOrder.objects.get(pk=pk)
+            purchase_order = purchaseOrder.objects.get(id=pk)
             serializer = purchaseOrderSerializer(purchase_order)
             return Response(serializer.data)
         except purchaseOrder.DoesNotExist:
@@ -118,8 +119,28 @@ class HperformanceViewset(viewsets.ViewSet):
         return JsonResponse({"message": "Performance metrics calculated and updated for vendor {}".format(id)})
     
 
-    def calculate_performance_metrics(sender, instance, **kwargs):
-        historicalPerformance.calculate_performance_metrics(instance)
+
+class AckPurchaseOrderViewSet(viewsets.ViewSet):
+    def put(self, request, pid):
+        try:
+            order = purchaseOrder.objects.get(id=pid)
+        except purchaseOrder.DoesNotExist:
+            return Response({"message": "Purchase order not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if order.acknowledgment_date is None:
+            order.acknowledgment_date = datetime().now()
+
+        serialized = historicalPerformanceSerializer(order, data={"acknowledgment_date": order.acknowledgment_date}, partial=True)
+        if serialized.is_valid():
+            order.save()
+            historicalPerformance.calculate_performance_metrics(order)
+            return Response({"message": "Purchase order acknowledged successfully"}, status=status.HTTP_200_OK)
+        else:
+            return Response(serialized.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    #def calculate_performance_metrics(sender, instance, **kwargs):
+        #historicalPerformance.calculate_performance_metrics(instance)
 
 
 
