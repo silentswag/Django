@@ -126,12 +126,12 @@ class poViewset(viewsets.ViewSet):
             return Response({"message": "Purchase order not found"}, status=status.HTTP_404_NOT_FOUND)
         
 class HperformanceViewset(viewsets.ViewSet):
-    def getVendor(self,request,pid):
+    def getVendor(self,request,pk=None):
         try:
-            vendorInst= vendor.objects.get(pid)
+            vendorInst= vendor.objects.get(pk=pk)
             hpVendor= historicalPerformance.objects.filter(vendor=vendorInst)
             serialized=historicalPerformanceSerializer(hpVendor,many=True)
-            return JsonResponse(serialized.data)
+            return JsonResponse(serialized.data,safe=False)
         except vendor.DoesNotExist:
             return JsonResponse({"message":"vendor doesnt exist"},status=status.HTTP_404_NOT_FOUND)
 
@@ -158,28 +158,26 @@ class HperformanceViewset(viewsets.ViewSet):
 
 class AckPurchaseOrderViewSet(viewsets.ViewSet):
     def put(self, request, pk=None):
+        if purchaseOrder.objects.get(pk=pk).acknowledgment_date:
+                    return Response({"error": "this order has already been acknowledged"}, status=status.HTTP_400_BAD_REQUEST)
         try:
+            
             order = purchaseOrder.objects.get(pk=pk)
+            # Check if the purchase order is associated with a vendor instance
+            if not isinstance(order.vendor, vendor):
+                return Response({"message": "Invalid vendor associated with the purchase order"}, status=status.HTTP_400_BAD_REQUEST)
             if order.acknowledgment_date:
                     return Response({"error": "this order has already been acknowledged"}, status=status.HTTP_400_BAD_REQUEST)
-            serialized = historicalPerformanceSerializer(order, data={"acknowledgment_date": datetime.now()}, partial=True)
-            if serialized.is_valid():
-                order.save()
-                calcAvgRespTime(order)
-                return Response(serialized.data, status=status.HTTP_201_CREATED)
+            # Update acknowledgment_date to today's date
+            order.acknowledgment_date = datetime.now()
+            order.save()
+            
+            # Trigger recalculation of average_response_time
+            calcAvgRespTime(order)
+            
+            return Response({"message": "Purchase order acknowledged successfully"}, status=status.HTTP_200_OK)
         except purchaseOrder.DoesNotExist:
             return Response({"message": "Purchase order not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        """if order.acknowledgment_date is None:
-            order.acknowledgment_date = datetime().now()
-
-        serialized = historicalPerformanceSerializer(order, data={"acknowledgment_date": order.acknowledgment_date}, partial=True)
-        if serialized.is_valid():
-            order.save()
-            historicalPerformance.calculate_performance_metrics(order)
-            return Response({"message": "Purchase order acknowledged successfully"}, status=status.HTTP_200_OK)
-        else:
-            return Response(serialized.errors, status=status.HTTP_400_BAD_REQUEST)"""
 
 
     #def calculate_performance_metrics(sender, instance, **kwargs):
