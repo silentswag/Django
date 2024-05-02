@@ -24,7 +24,7 @@ class purchaseOrder(models.Model):
         default="pending",)
     quality_rating=models.FloatField(max_length=100)
     issue_date=models.DateTimeField(max_length=10)
-    acknowledgment_date=models.DateTimeField(null=True,blank=True)
+    acknowledgment_date=models.DateTimeField(blank=True,null=True)
 
 class historicalPerformance(models.Model):
     vendor=models.ForeignKey(to=vendor, on_delete=models.CASCADE,max_length=200)
