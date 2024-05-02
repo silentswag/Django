@@ -94,9 +94,9 @@ class poViewset(viewsets.ViewSet):
             return Response({"message": "Purchase order not found"}, status=status.HTTP_404_NOT_FOUND)
         
 class HperformanceViewset(viewsets.ViewSet):
-    def getVendor(self,request,id=None):
+    def getVendor(self,request,pid):
         try:
-            vendorInst= vendor.objects.get(pk=id)
+            vendorInst= vendor.objects.get(pid)
             hpVendor= historicalPerformance.objects.filter(vendor=vendorInst)
             serialized=historicalPerformanceSerializer(hpVendor,many=True)
             return JsonResponse(serialized.data)
