@@ -34,7 +34,7 @@ class historicalPerformance(models.Model):
     average_response_time=models.FloatField(max_length=50)
     fulfilment_rate=models.FloatField(max_length=10)
 
-     #calcPerformancemetrics
+    """ #calcPerformancemetrics
     def calc_onTimedeliveryRate(vendor):
         # on-time delivery rate=(Number of Deliveries Made on Time / Total Number of Deliveries) * 100
         total=purchaseOrder.objects.filter(vendor=vendor).filter(status="completed").count()
@@ -71,4 +71,4 @@ class historicalPerformance(models.Model):
         historicalPerformance.calcQualityRatingAvg(vendor)
         historicalPerformance.calcAvgRespTime(vendor)
         historicalPerformance.calcFulfillmentRate(vendor)
-        vendor.save()
+        vendor.save()"""

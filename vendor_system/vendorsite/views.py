@@ -12,36 +12,6 @@ from datetime import timedelta, datetime
 from django.db.models import Avg, Count, F
 from django.http import HttpResponse, JsonResponse
 
-def calc_onTimedeliveryRate(vendor):
-        # on-time delivery rate=(Number of Deliveries Made on Time / Total Number of Deliveries) * 100
-        total=purchaseOrder.objects.filter(vendor=vendor).filter(status="completed").count()
-        if total==0:
-            vendor.on_time_delivery_rate=0
-        else: #check
-            on_time_delivery_orders=purchaseOrder.objects.filter(vendor=vendor).filter(status="completed").order_date.date()+ timedelta(days=5)
-            if purchaseOrder.objects.filter(vendor=vendor).filter(status="completed").delivery_date.date()<= on_time_delivery_orders:
-                on_time_delivery_rate = (on_time_delivery_orders / total) * 100 
-            vendor.on_time_delivery_rate = on_time_delivery_rate
-
-
-def calcQualityRatingAvg(vendor):
-# quality ratings= avg of all quality ratings
-    quality_rating_avg = purchaseOrder.objects.filter(vendor=vendor, status='completed').aggregate(avg_rating=Avg('quality_rating'))['avg_rating']
-    vendor.quality_rating_avg = quality_rating_avg
-
-def calcAvgRespTime(vendor):
-    order=purchaseOrder.objects.filter(vendor=vendor).filter(acknowledgement_date__isnull=False)
-    inter=order.aggregate(avg_resp=Avg(F('acknowledgment_date') - F('issue_date'))['avg_response'])
-    vendor.average_response_time=inter.total_seconds() / purchaseOrder.objects.filter(vendor=vendor, acknowledgment_date__isnull=False).count() if inter else 0
-
-def calcFulfillmentRate(vendor):
-    totalOrders = purchaseOrder.objects.filter(vendor=vendor).count()
-    if totalOrders == 0:
-        vendor.fulfillment_rate = 0
-    else:
-        fulfilled_orders = purchaseOrder.objects.filter(vendor=vendor, status='completed', issues__isnull=True).count()
-        vendor.fulfillment_rate = (fulfilled_orders / totalOrders) * 100
-
 class vendorViewset(viewsets.ViewSet):
     def createVendor(self, request):
         serialized = vendorSerializer(data=request.data)
@@ -100,7 +70,7 @@ class poViewset(viewsets.ViewSet):
 
     def retrievePOinstance(self, request, pk=None):
         try:
-            purchase_order = purchaseOrder.objects.get(id=pk)
+            purchase_order = purchaseOrder.objects.get(pk=pk)
             serializer = purchaseOrderSerializer(purchase_order)
             return Response(serializer.data)
         except purchaseOrder.DoesNotExist:
@@ -126,25 +96,84 @@ class poViewset(viewsets.ViewSet):
             return Response({"message": "Purchase order not found"}, status=status.HTTP_404_NOT_FOUND)
         
 class HperformanceViewset(viewsets.ViewSet):
-    def getVendor(self,request,pk=None):
+    def get(self, request, pk=None):
         try:
-            vendorInst= vendor.objects.get(pk=pk)
-            hpVendor= historicalPerformance.objects.filter(vendor=vendorInst)
-            serialized=historicalPerformanceSerializer(hpVendor,many=True)
-            return JsonResponse(serialized.data,safe=False)
-        except vendor.DoesNotExist:
-            return JsonResponse({"message":"vendor doesnt exist"},status=status.HTTP_404_NOT_FOUND)
-
-
-    def calculate_performance_metrics(self, request, id=None):
-        try:
-            vendorInst = vendor.objects.get(pk=id)
-            calc_onTimedeliveryRate(vendorInst)
-            calcAvgRespTime(vendorInst)
-            calcFulfillmentRate(vendorInst)
-            calcQualityRatingAvg(vendorInst)
+            vendor_inst = vendor.objects.get(pk=pk)
+            res = self.calculate_performance_metrics(vendor_inst)
+            quality_rating_avg = vendor_inst.quality_rating_avg
+            average_response_time = vendor_inst.average_response_time
+            fulfillment_rate = vendor_inst.fulfillment_rate
+            on_time_delivery_rate = vendor_inst.on_time_delivery_rate
         except vendor.DoesNotExist:
             return JsonResponse({"message": "vendor doesn't exist"}, status=status.HTTP_404_NOT_FOUND)
+        return JsonResponse({
+            'quality_rating_avg': quality_rating_avg,
+            'average_response_time': average_response_time,
+            'fulfillment_rate': fulfillment_rate,
+            'on_time_delivery_rate': on_time_delivery_rate,
+        })
+    
+    def calculate_performance_metrics(self,vendor_inst):
+        self.calc_onTimedeliveryRate(vendor_inst)
+        self.calcQualityRatingAvg(vendor_inst)
+        self.calcAvgRespTime(vendor_inst)
+        self.calcFulfillmentRate(vendor_inst)
+
+    def calc_onTimedeliveryRate(self,vendor_inst):
+        total = purchaseOrder.objects.filter(vendor=vendor_inst, status="completed").count()
+        if total == 0:
+            vendor.on_time_delivery_rate = 0
+        else:
+            on_time_count = 0
+            orders = purchaseOrder.objects.filter(vendor=vendor_inst, status="completed")
+            for order in orders:
+                on_time_delivery_orders = order.order_date + timedelta(days=5)
+                if order.delivery_date <= on_time_delivery_orders:
+                    on_time_count += 1
+
+            on_time_delivery_rate = (on_time_count / total) * 100 
+            vendor.on_time_delivery_rate = on_time_delivery_rate
+
+        return vendor.on_time_delivery_rate
+
+
+    from django.db.models import Avg, F
+
+    def calcQualityRatingAvg(self, vendor_inst):
+        # quality ratings= avg of all quality ratings
+        quality_rating_avg = purchaseOrder.objects.filter(vendor=vendor_inst, status='completed').aggregate(avg_rating=Avg('quality_rating'))
+        vendor_inst.quality_rating_avg = quality_rating_avg['avg_rating'] if quality_rating_avg['avg_rating'] is not None else 0
+        return vendor_inst.quality_rating_avg
+
+    def calcAvgRespTime(self, vendor_inst):
+        order = purchaseOrder.objects.filter(vendor=vendor_inst, acknowledgment_date__isnull=False)
+        inter = order.aggregate(avg_resp=Avg(F('acknowledgment_date') - F('issue_date')))
+        average_response_time = inter['avg_resp'].total_seconds() / order.count() if inter['avg_resp'] else 0
+        vendor_inst.average_response_time = average_response_time
+        return average_response_time
+
+    def calcFulfillmentRate(self, vendor_inst):
+        totalOrders = purchaseOrder.objects.filter(vendor=vendor_inst).count()
+        if totalOrders == 0:
+            vendor_inst.fulfillment_rate = 0
+        else:
+            fulfilled_orders = purchaseOrder.objects.filter(vendor=vendor_inst, status='completed', issue_date__isnull=True).count()
+            vendor_inst.fulfillment_rate = (fulfilled_orders / totalOrders) * 100
+        return vendor_inst.fulfillment_rate
+
+            
+        
+                
+    """def getVendor(self,pk=None):
+        try:
+            vendorInst= vendor.objects.get(pk=pk)
+            hpVendor= purchaseOrder.objects.filter(vendor=vendorInst)
+            res=hpVendor.calculate_performance_metrics()
+            serialized=historicalPerformanceSerializer(res,many=True)
+            return JsonResponse(serialized.data,safe=False)
+        except vendor.DoesNotExist:
+            return JsonResponse({"message":"vendor doesnt exist"},status=status.HTTP_404_NOT_FOUND)"""
+
 
         # Calculate performance metrics for the vendor
         #historicalPerformance.calc_onTimedeliveryRate(vendorInst)
@@ -152,7 +181,7 @@ class HperformanceViewset(viewsets.ViewSet):
         #historicalPerformance.calcAvgRespTime(vendorInst)
         #historicalPerformance.calcFulfillmentRate(vendorInst)
     
-        return JsonResponse({"message": "Performance metrics calculated and updated for vendor {}".format(id)})
+
     
 
 
@@ -173,7 +202,7 @@ class AckPurchaseOrderViewSet(viewsets.ViewSet):
             order.save()
             
             # Trigger recalculation of average_response_time
-            calcAvgRespTime(order)
+            self.calcAvgRespTime(order)
             
             return Response({"message": "Purchase order acknowledged successfully"}, status=status.HTTP_200_OK)
         except purchaseOrder.DoesNotExist:
