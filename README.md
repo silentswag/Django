@@ -16,12 +16,12 @@ py manage.py runserver
 
 Try the below list of urls for rendering views
 
-http://127.0.0.1:8000/api/vendors
-http://127.0.0.1:8000/api/vendors/8
-http://127.0.0.1:8000/api/purchase_orders
-http://127.0.0.1:8000/api/purchase_orders/8
-http://127.0.0.1:8000/api/vendors/8/performance
-http://127.0.0.1:8000/api/purchase_orders/8/acknowledge
+1. http://127.0.0.1:8000/api/vendors
+2. http://127.0.0.1:8000/api/vendors/8
+3. http://127.0.0.1:8000/api/purchase_orders
+4. http://127.0.0.1:8000/api/purchase_orders/8
+5. http://127.0.0.1:8000/api/vendors/8/performance
+6. http://127.0.0.1:8000/api/purchase_orders/8/acknowledge
 
 
 *
