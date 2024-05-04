@@ -134,18 +134,20 @@ class HperformanceViewset(viewsets.ViewSet):
             on_time_delivery_rate = (on_time_count / total) * 100 
             vendor.on_time_delivery_rate = on_time_delivery_rate
 
-        return vendor.on_time_delivery_rate
-
-
+        return vendor_inst.on_time_delivery_rate
     from django.db.models import Avg, F
 
     def calcQualityRatingAvg(self, vendor_inst):
         # quality ratings= avg of all quality ratings
+        if purchaseOrder.objects.filter(vendor=vendor_inst, status='completed').count()==1: quality_rating_avg=100  
+        return vendor_inst.quality_rating_avg
         quality_rating_avg = purchaseOrder.objects.filter(vendor=vendor_inst, status='completed').aggregate(avg_rating=Avg('quality_rating'))
         vendor_inst.quality_rating_avg = quality_rating_avg['avg_rating'] if quality_rating_avg['avg_rating'] is not None else 0
         return vendor_inst.quality_rating_avg
 
     def calcAvgRespTime(self, vendor_inst):
+        if purchaseOrder.objects.filter(vendor=vendor_inst, status='completed').count()==1: average_response_time=100  
+        return vendor_inst.average_response_time
         order = purchaseOrder.objects.filter(vendor=vendor_inst, acknowledgment_date__isnull=False)
         inter = order.aggregate(avg_resp=Avg(F('acknowledgment_date') - F('issue_date')))
         average_response_time = inter['avg_resp'].total_seconds() / order.count() if inter['avg_resp'] else 0
@@ -153,13 +155,26 @@ class HperformanceViewset(viewsets.ViewSet):
         return average_response_time
 
     def calcFulfillmentRate(self, vendor_inst):
-        totalOrders = purchaseOrder.objects.filter(vendor=vendor_inst).count()
-        if totalOrders == 0:
-            vendor_inst.fulfillment_rate = 0
+        
+        totalOrders = purchaseOrder.objects.filter(vendor=vendor_inst).exclude(status="pending")
+        n=len(totalOrders)
+        #if totalOrders == 0:
+            #vendor_inst.fulfillment_rate = 0
+        
+        if n>1:
+            fulfilled_orders = purchaseOrder.objects.filter(vendor=vendor_inst, status='completed').count()
+            vendor_inst.fulfillment_rate = (fulfilled_orders / n) * 100
+            return vendor_inst.fulfillment_rate
+
+        elif n==1:
+            if totalOrders[0].status=="completed":
+                fulfillment_rate= 100
+                return vendor_inst.fulfillment_rate 
+            else:
+                fulfillment_rate = 0
+
         else:
-            fulfilled_orders = purchaseOrder.objects.filter(vendor=vendor_inst, status='completed', issue_date__isnull=True).count()
-            vendor_inst.fulfillment_rate = (fulfilled_orders / totalOrders) * 100
-        return vendor_inst.fulfillment_rate
+            fulfillment_rate  = None
 
             
         
