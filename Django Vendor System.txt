@@ -6,7 +6,6 @@ Django Vendor System
 4. python manage.py migrate
 5. python manage.py runserver
 
-
 Start project
 1. python manage.py startapp vendorsite
 2. define models -> from django.db import models
@@ -60,22 +59,12 @@ Running migrations:
   Applying vendorsite.0001_initial... OK
   Applying vendorsite.0002_alter_purchaseorder_quantity... OK
 
-5.inserting data using python shell
-In [1]: from vendorsite.models import vendor
-
-In [2]: vendor.objects.all()
-Out[2]: <QuerySet []>
 
 
-name= 'amazon', contact_details='phone:976453', address='123,cityville,NY' , vendor_code= 'amazn001', on_time_delivery_rate= 0.98, quality_rating_avg=4.3, average_response_time=1.5, fulfillment_rate=o.95 
-
-In [5]: v1.save()
-
-In [6]: vendor.objects.all().values()
-Out[6]: <QuerySet [{'id': 1, 'name': 'amazon', 'contact_details': 'phone:976453', 'address': '123, cityville, NY', 'vendor_code': 'amazn001', 'on_time_delivery_rate': 0.98, 'quality_rating_avg': 4.3, 'average_response_time': 1.5, 'fulfillment_rate': 0.95}]>
-
-
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Vendor Name", "contact_details": "Contact Details", "address": "Vendor Address", "vendor_code": "Vendor Code"}' \
-  http://your-api-domain/api/vendors/
+List of urls for rendering views
+1. http://127.0.0.1:8000/api/vendors
+2. http://127.0.0.1:8000/api/vendors/8
+3. http://127.0.0.1:8000/api/purchase_orders
+4. http://127.0.0.1:8000/api/purchase_orders/8
+5. http://127.0.0.1:8000/api/vendors/8/performance
+6. http://127.0.0.1:8000/api/purchase_orders/8/acknowledge
