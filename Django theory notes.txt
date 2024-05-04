@@ -2,11 +2,11 @@ models:They define the fields and behavior of the data you're storing. Each mode
 
 views:they encapsulate the logic that retrieves data from the database using the models and then sends it to a template to be rendered.
 
- urls: They define the endpoints that clients can access in your web application
+urls: They define the endpoints that clients can access in your web application
 
 
 
- When a request comes in for a particular URL, Django's URL resolver matches the URL to a corresponding view.Views typically interact with models to retrieve data from the database. They can use querysets (filtered lists of objects) returned by model methods to access and manipulate data. Once data is retrieved, views pass it to templates for rendering.views pass data retrieved from models to templates by rendering them with a context, which is a dictionary containing data to be inserted into the template. 
+When a request comes in for a particular URL, Django's URL resolver matches the URL to a corresponding view.Views typically interact with models to retrieve data from the database. They can use querysets (filtered lists of objects) returned by model methods to access and manipulate data. Once data is retrieved, views pass it to templates for rendering.views pass data retrieved from models to templates by rendering them with a context, which is a dictionary containing data to be inserted into the template. 
 
 This time we've used the ModelViewSet class in order to get the complete set of default read and write operations.
 
