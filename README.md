@@ -14,6 +14,8 @@ py manage.py migrate
 py manage.py runserver
 
 
+
+
 Try the below list of urls for rendering views
 
 1. http://127.0.0.1:8000/api/vendors
